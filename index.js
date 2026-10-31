@@ -26,9 +26,16 @@ app.use('/professor',professorRoutes);
 app.use('/general', generalRoutes);
 app.use(notFound)
 app.use(errorMiddleware)
-const PORT = process.env.PORT  || 5001;
-mongoose.connect(process.env.MONGO_URL, {
-}).then(() => {
+const PORT = process.env.PORT  || 3000;
+
+const mongoOptions = {};
+if (process.env.DB_TYPE === "documentdb") {
+  mongoOptions.tls = true;
+  mongoOptions.tlsCAFile = process.env.DOCDB_CA_FILE;
+  mongoOptions.retryWrites = false;
+}
+mongoose.connect(process.env.MONGO_URL, mongoOptions)
+    .then(() => {
     console.log("MongoDb connected successfully.")
     app.listen(PORT, () => console.log(`Server Port: ${PORT}`));  
 }).catch((error) => console.log(`${error} did not connect`)); 
