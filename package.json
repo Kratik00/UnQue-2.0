@@ -5,7 +5,7 @@
   "main": "index.js",
   "type": "module",
   "scripts": {
-    "dev": "nodemon server.js",
+    "dev": "nodemon index.js",
     "test": "jest"
   },
   "author": "",
@@ -24,6 +24,6 @@
     "nodemon": "^3.1.7"
   },
   "devDependencies": {
-    "jest": "^23.6.0"
+    "jest": "^30.5.2"
   }
 }

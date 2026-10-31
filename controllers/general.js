@@ -40,17 +40,22 @@ const bookAppointment = async (req, res, next) => {
     const { professorId, time } = req.body; // Professor's ID and time (T1) for booking
     const studentId = req.user.id; // Student's ID from the authenticated user
 
+    if (!mongoose.Types.ObjectId.isValid(professorId) || !time) {
+      return next(new HttpError("Invalid professor Id or appointment time.", 400))
+    }
     if (!time || !professorId) {
       return next(new HttpError("Professor ID and time are required", 400));
     }
 
-    const formattedTime = moment(time).utc().toDate(); // Convert time to UTC Date object
-
+    const formattedTime = new Date(time); // Convert time to UTC Date object
+    if (isNaN(formattedTime.getTime())) {
+      return next(new HttpError("Invalid appointment time.", 400))
+    }
     // professor has available slots during the provided time
     const availability = await Availability.findOne({
       professorId: new mongoose.Types.ObjectId(professorId),
       startTime: { $lte: formattedTime }, // Check if the time is greater than or equal to startTime
-      endTime: { $gte: formattedTime },   // Check if the time is less than or equal to endTime
+      endTime: { $gt: formattedTime },   // Check if the time is less than endTime
     });
 
     // Log the data for debugging
@@ -66,10 +71,22 @@ const bookAppointment = async (req, res, next) => {
       studentId: new mongoose.Types.ObjectId(studentId),
       professorId: new mongoose.Types.ObjectId(professorId),
       time: formattedTime,
+      status: "booked"
     });
 
     if (existingAppointment) {
       return next(new HttpError("You already have an appointment for this time", 400));
+    }
+
+    // Check if the professor appointment is already booked by any student
+    const existingAppointmentProfessor = await Appointment.findOne({
+      professorId: new mongoose.Types.ObjectId(professorId),
+      time: formattedTime,
+      status: "booked"
+    });
+
+    if (existingAppointmentProfessor) {
+      return next(new HttpError("This appointment time is already booked.", 409))
     }
 
     // Creating the appointment

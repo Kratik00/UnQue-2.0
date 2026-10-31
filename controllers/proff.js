@@ -95,11 +95,11 @@ const setAvailability = async (req, res, next) => {
           professorId: new mongoose.Types.ObjectId(professorId),
           status: 'booked'
         },
-        { status: 'canceled' }  //  the status  needs to be canceled
+        { status: 'cancelled' }  //  the status  needs to be canceled
       );
   
       res.status(200).json({
-        message: `All appointments between professor ${professorId} and student ${studentId} have been canceled.,`
+        message: `All appointments between professor ${professorId} and student ${studentId} have been cancelled.,`
       });
   
     } catch (error) {
@@ -107,4 +107,73 @@ const setAvailability = async (req, res, next) => {
       return next(new HttpError(error));
     }
   };
-export {setAvailability, cancelAppointments};
+
+// Adding a function to check availabilty and update based on that
+const updateAvailability = async(req, res, next) => {
+  try {
+    const { availabilityId } = req.params;
+    const { startTime, endTime } = req.body;
+    const availability = await Availability.findOne({
+      _id: availabilityId,
+      professorId: req.user.id
+    });
+    if (!availability) {
+      return res.status(404).json({
+        message: "Availabilty not found"
+      });
+    }
+    const start = new Date(startTime);
+    const end = new Date(endTime);
+
+    if (
+      isNaN(start.getTime()) ||
+      isNaN(end.getTime()) ||
+      start >= end
+    ) {
+      return res.status(404).json({
+        message: "Invalid time range"
+      });
+    }
+
+    const overlapping = await Availability.findOne({
+      _id: { $ne: availabilityId },
+      professorId: req.user.id,
+      startTime: { $lt: end },
+      endTime: { $gt: start }
+    });
+    
+    if (overlapping) {
+      return res.status(409).json({
+        message: "Availabilty overlaps with another slot."
+      });
+    }
+
+    const existingAppointment = await Appointment.findOne({
+      professorId: req.user.id,
+      time: {
+        $gte: availability.startTime,
+        $lte: availability.endTime
+      },
+      status: "booked"
+    });
+
+    if (existingAppointment) {
+      return res.status(409).json({
+        message: "Cannot update availabilty because an appointment is already booked."
+      });
+    }
+
+    availability.startTime = start;
+    availability.endTime = end;
+
+    await availability.save();
+
+    return res.status(200).json({
+      message: "Availabilty updated successfully.",
+      availability
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+export {setAvailability, cancelAppointments, updateAvailability};

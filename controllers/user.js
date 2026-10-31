@@ -26,7 +26,12 @@ const register = async (req, res, next) => {
     const salt = await bcrypt.genSalt(11);  // 11 rounds are good and protects against attacks
     const hashedPassword = await bcrypt.hash(password, salt);
     const newUser = await User.create({ name, email: newEmail, password: hashedPassword, role });
-    res.status(201).json({ newUser });
+    const userResponse= newUser.toObject();
+    delete userResponse.password;
+    res.status(201).json({
+      message: "User registered successfully.",
+      userResponse
+    });
   } catch (error) {
     return next(new HttpError("User Registration Failed", 422));
   }
