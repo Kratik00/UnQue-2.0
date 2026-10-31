@@ -3,7 +3,7 @@ node_modules/
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
-package-lock.json
+#package-lock.json
 yarn.lock
 
 # Logs
@@ -58,10 +58,10 @@ bower_components/
 *.sw?
 
 # Docker
-Dockerfile
-docker-compose.yml
-docker-compose.override.yml
-docker/
+# Dockerfile
+# docker-compose.yml
+# docker-compose.override.yml
+# docker/
 
 #.tar files
 unque-backend.tar
